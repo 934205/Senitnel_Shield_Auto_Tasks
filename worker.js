@@ -8,8 +8,25 @@ const supabase = createClient(
 );
 
 async function handleEndOperation(student) {
-  console.log(`✅ Handling end operation for ${student.name} (${student.reg_no})`);
+  const currentTime = new Date().toISOString();
+  console.log(`✅ Handling end operation for ${student.name} (${student.reg_no}) at ${currentTime}`);
+
+  try {
+    const { data, error } = await supabase
+      .from("location_logs")
+      .update({ exit_time: currentTime, inside: false })
+      .eq("reg_no", student.reg_no)
+      .eq("date", new Date().toISOString().split("T")[0])
+      .is("exit_time", null); // only update if not already updated
+
+    if (error) console.error(`❌ Failed to update exit_time for ${student.reg_no}:`, error);
+    else console.log(`✅ exit_time updated for ${student.reg_no}`);
+  } catch (err) {
+    console.error(`❌ Error updating exit_time for ${student.reg_no}:`, err);
+  }
 }
+
+
 
 async function checkHostelBoys() {
   const today = new Date().toLocaleString("en-US", { weekday: "long" }).toLowerCase();
@@ -55,11 +72,17 @@ async function checkHostelBoys() {
 
       console.log(`🎓 ${student.name} (${student.reg_no}) - End time today: ${timing[endTimeColumn]}`);
 
-      const now = new Date();
-      const endTime = timing[endTimeColumn];
-      if (endTime && now.toTimeString().slice(0, 5) >= endTime.slice(0, 5)) {
+      const now = new Date(); // current date & time
+      const [hours, minutes, seconds] = timing[endTimeColumn].split(':').map(Number);
+
+      // create a Date object for today at endTime
+      const endTimeDate = new Date(now);
+      endTimeDate.setHours(hours, minutes, seconds || 0, 0);
+
+      if (now >= endTimeDate) {
         await handleEndOperation(student);
       }
+
     }
   } catch (err) {
     console.error("❌ Error in checkHostelBoys:", err);
