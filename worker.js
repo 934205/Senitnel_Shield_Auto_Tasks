@@ -20,7 +20,7 @@ async function checkHostelBoys() {
     const { data: students, error: studentError } = await supabase
       .from("student")
       .select("*")
-      .eq("gender", "male")
+      .eq("gender", "Male")
       .eq("hosteller", true);
 
     if (studentError) throw studentError;
