@@ -1,0 +1,28 @@
+name: Senitnel Shield Auto Tasks (8AM–6PM IST)
+
+on:
+  schedule:
+    # Run every 30 mins between 8 AM–6 PM IST (2:30–12:30 UTC)
+    - cron: '0,30 2-12 * * *'
+  workflow_dispatch: # Allow manual run for testing
+
+jobs:
+  run-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Supabase worker
+        run: node worker.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
