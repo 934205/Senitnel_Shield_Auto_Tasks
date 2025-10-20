@@ -56,14 +56,13 @@ async function doLogout(reg_no) {
   }
 }
 
-async function handleEndOperation(student) {
-  const currentTime = new Date().toISOString();
-  console.log(`✅ Handling end operation for ${student.name} (${student.reg_no}) at ${currentTime}`);
+async function handleEndOperation(student, currentDate) {
+  const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const exitTime = now.toTimeString().split(' ')[0]; // "HH:MM:SS"
+
+  console.log(`✅ Handling end operation for ${student.name} (${student.reg_no}) at ${exitTime}`);
 
   try {
-    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-    const exitTime = now.toTimeString().split(' ')[0]; // "06:22:28"
-
     const { data, error } = await supabase
       .from("location_logs")
       .update({ exit_time: exitTime, inside: false })
@@ -74,12 +73,13 @@ async function handleEndOperation(student) {
     if (error) console.error(`❌ Failed to update exit_time for ${student.reg_no}:`, error);
     else {
       console.log(`✅ exit_time updated for ${student.reg_no}`);
-      await doLogout(student.reg_no)
+      await doLogout(student.reg_no);
     }
   } catch (err) {
     console.error(`❌ Error updating exit_time for ${student.reg_no}:`, err);
   }
 }
+
 
 
 
