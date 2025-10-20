@@ -121,9 +121,10 @@ async function checkHostelBoys() {
         const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
         const [h, m, s] = timing[endTimeColumn].split(':').map(Number);
         const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s || 0);
+        const currentDate = new Date().toISOString().split("T")[0];
 
         if (now >= endTime) {
-          await handleEndOperation(student); // ensure FCM is sent
+          await handleEndOperation(student,currentDate); // ensure FCM is sent
         }
       })
     );
