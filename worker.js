@@ -68,7 +68,6 @@ async function handleEndOperation(student, currentDate) {
       .update({ exit_time: exitTime, inside: false })
       .eq("reg_no", student.reg_no)
       .eq("date", currentDate)
-      .is("exit_time", null);
 
     if (error) console.error(`❌ Failed to update exit_time for ${student.reg_no}:`, error);
     else {
