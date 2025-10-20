@@ -1,11 +1,60 @@
 const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
+const admin = require("firebase-admin");
 
 // ✅ Initialize Supabase client
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
+
+
+const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+
+async function doLogout(reg_no) {
+  try {
+    // Get the user's FCM token from DB
+    const { data: tokenData, error: tokenError } = await supabase
+      .from("fcm_tokens")
+      .select("fcm_token")
+      .eq("reg_no", reg_no)
+      .single(); // assume one token per user
+
+    if (tokenError) {
+      throw tokenError; // handle error
+    }
+
+    const fcm_token = tokenData?.fcm_token;
+    if (!fcm_token) {
+      throw new Error(`No FCM token found for reg_no: ${reg_no}`);
+    }
+
+    // 2️⃣ Send Firebase push notification
+    const message = {
+      token: fcm_token,
+
+      data: {
+        action: "logout",
+        message: "You are being logged out remotely",
+      },
+      android: {
+        priority: "high", // ensures delivery even if app is killed
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+
+    console.log(`✅ Logout notification sent for ${reg_no}`, response);
+  } catch (err) {
+    console.error("❌ Error sending FCM logout:", err);
+
+  }
+}
 
 async function handleEndOperation(student) {
   const currentTime = new Date().toISOString();
@@ -21,6 +70,7 @@ async function handleEndOperation(student) {
 
     if (error) console.error(`❌ Failed to update exit_time for ${student.reg_no}:`, error);
     else console.log(`✅ exit_time updated for ${student.reg_no}`);
+    await doLogout(student.reg_no)
   } catch (err) {
     console.error(`❌ Error updating exit_time for ${student.reg_no}:`, err);
   }
@@ -28,66 +78,60 @@ async function handleEndOperation(student) {
 
 
 
+// GitHub Action triggered script
 async function checkHostelBoys() {
   const today = new Date().toLocaleString("en-US", { weekday: "long" }).toLowerCase();
   const endTimeColumn = `${today}_end_time`;
   const currentDate = new Date().toISOString().split("T")[0];
 
   try {
-    const { data: students, error: studentError } = await supabase
+    const { data: students } = await supabase
       .from("student")
       .select("*")
       .eq("gender", "Male")
       .eq("hosteller", true);
 
-    if (studentError) throw studentError;
-
-    const { data: logs, error: logError } = await supabase
+    const { data: logs } = await supabase
       .from("location_logs")
       .select("reg_no")
       .eq("date", currentDate)
       .eq("inside", true);
 
-    if (logError) throw logError;
+    const insideRegNos = logs.map(l => l.reg_no);
+    const insideStudents = students.filter(s => insideRegNos.includes(s.reg_no));
 
-    const insideRegNos = logs.map((log) => log.reg_no);
-    const insideStudents = students.filter((s) => insideRegNos.includes(s.reg_no));
+    await Promise.all(
+      insideStudents.map(async (student) => {
+        const { data: timing, error: timingError } = await supabase
+          .from("timing")
+          .select(endTimeColumn)
+          .eq("dept_year_id", student.dept_year_id)
+          .single();
 
-    if (insideStudents.length === 0) {
-      console.log("✅ No male hosteller students currently inside.");
-      return;
-    }
+        if (timingError || !timing?.[endTimeColumn]) {
+          console.error(`Skipping ${student.reg_no}: No timing data`);
+          return;
+        }
 
-    for (const student of insideStudents) {
-      const { data: timing, error: timingError } = await supabase
-        .from("timing")
-        .select(endTimeColumn)
-        .eq("dept_year_id", student.dept_year_id)
-        .single();
+        const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+        const [h, m, s] = timing[endTimeColumn].split(':').map(Number);
+        const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s || 0);
 
-      if (timingError) {
-        console.error(`❌ Error fetching timing for ${student.reg_no}:`, timingError);
-        continue;
-      }
+        if (now >= endTime) {
+          await handleEndOperation(student); // ensure FCM is sent
+        }
+      })
+    );
 
-      console.log(`🎓 ${student.name} (${student.reg_no}) - End time today: ${timing[endTimeColumn]}`);
 
-      const now = new Date(); // current date & time
-      const [hours, minutes, seconds] = timing[endTimeColumn].split(':').map(Number);
 
-      // create a Date object for today at endTime
-      const endTimeDate = new Date(now);
-      endTimeDate.setHours(hours, minutes, seconds || 0, 0);
-
-      if (now >= endTimeDate) {
-        await handleEndOperation(student);
-      }
-
-    }
   } catch (err) {
-    console.error("❌ Error in checkHostelBoys:", err);
+    console.error(err);
   }
 }
 
+
 // ✅ Run once when GitHub Action triggers
 checkHostelBoys();
+
+
