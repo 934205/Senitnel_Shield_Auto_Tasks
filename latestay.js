@@ -8,6 +8,13 @@ const supabase = createClient(
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioPhone = process.env.TWILIO_PHONE;
+const adminPhone = process.env.ADMIN_PHONE;
+
+const client = twilio(accountSid, authToken);
+
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 
@@ -68,8 +75,24 @@ async function sendAlert(reg_no) {
                 // user did NOT reply within 1min 
                 console.log("❌ User did NOT reply within 1min ");
 
+                const { data: student, error: studentError } = await supabase
+                    .from("student")
+                    .select("mobile_number, name, dept_year_id")
+                    .eq("reg_no", reg_no)
+                    .single();
+
+                if (studentError || !student) {
+                    return res.status(404).json({ error: "Student not found" });
+                }
+
                 // Execute function B
-                sendAlertToAdvisor(reg_no, sent_at);
+                await client.messages.create({
+                    body: `⚠️ ALERT: ${student.name} (${reg_no}) inside campus after regular end time  (mobile number = ${student.mobile_number}) 
+                    and they didn't sent any reply`,
+                    from: twilioPhone,
+                    to: adminPhone,
+                });
+                console.log("🚨 Student reply sent to Admin sent");
 
                 // Update status to timeout
                 await supabase
@@ -79,7 +102,7 @@ async function sendAlert(reg_no) {
             }
         }, 60 * 2000);
 
-    console.log(JSON.stringify({ type: 'alert_sent', reg_no, sent_at }));
+        console.log(JSON.stringify({ type: 'alert_sent', reg_no, sent_at }));
     } catch (err) {
         console.error("Error sending alert:", err);
     }
@@ -153,11 +176,6 @@ async function alertLateStayStudents() {
     }
 }
 
-
-function sendAlertToAdvisor(user_id, sent_at) {
-    // write code to send the alert to admin that user didn't reply
-    console.log(`Function executed for ${user_id}, sent_at: ${sent_at}`);
-}
 
 // ✅ Run once when GitHub Action triggers
 alertLateStayStudents();
