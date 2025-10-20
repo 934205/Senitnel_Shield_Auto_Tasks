@@ -61,16 +61,21 @@ async function handleEndOperation(student) {
   console.log(`✅ Handling end operation for ${student.name} (${student.reg_no}) at ${currentTime}`);
 
   try {
+    const now = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+    const exitTime = now.toTimeString().split(' ')[0]; // "06:22:28"
+
     const { data, error } = await supabase
       .from("location_logs")
-      .update({ exit_time: currentTime, inside: false })
+      .update({ exit_time: exitTime, inside: false })
       .eq("reg_no", student.reg_no)
-      .eq("date", new Date().toISOString().split("T")[0])
-      .is("exit_time", null); // only update if not already updated
+      .eq("date", currentDate)
+      .is("exit_time", null);
 
     if (error) console.error(`❌ Failed to update exit_time for ${student.reg_no}:`, error);
-    else console.log(`✅ exit_time updated for ${student.reg_no}`);
-    await doLogout(student.reg_no)
+    else {
+      console.log(`✅ exit_time updated for ${student.reg_no}`);
+      await doLogout(student.reg_no)
+    }
   } catch (err) {
     console.error(`❌ Error updating exit_time for ${student.reg_no}:`, err);
   }
