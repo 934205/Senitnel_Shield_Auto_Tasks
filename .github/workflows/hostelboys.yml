@@ -48,7 +48,7 @@ jobs:
 
       # 6️⃣ Run Supabase worker
       - name: Run Supabase worker
-        run: node worker.js
+        run: node hostelboys.js
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
