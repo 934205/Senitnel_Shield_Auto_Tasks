@@ -55,7 +55,7 @@ async function sendAlert(reg_no) {
         };
         await admin.messaging().send(message);
 
-        // 3️⃣ Schedule server-side check for 1 min timeout
+        // 3️⃣ Schedule server-side check for 2 min timeout
         setTimeout(async () => {
             const { data } = await supabase
                 .from("alerts")
@@ -65,11 +65,11 @@ async function sendAlert(reg_no) {
                 .single();
 
             if (data && data.status === "pending") {
-                // user did NOT open notification
-                console.log("❌ User did NOT open notification within 1 min");
+                // user did NOT reply within 1min 
+                console.log("❌ User did NOT reply within 1min ");
 
                 // Execute function B
-                functionB(reg_no, sent_at);
+                sendAlertToAdvisor(reg_no, sent_at);
 
                 // Update status to timeout
                 await supabase
@@ -154,11 +154,12 @@ async function alertLateStayStudents() {
 }
 
 
+function sendAlertToAdvisor(user_id, sent_at) {
+    // write code to send the alert to admin that user didn't reply
+    console.log(`Function executed for ${user_id}, sent_at: ${sent_at}`);
+}
+
 // ✅ Run once when GitHub Action triggers
 alertLateStayStudents();
-
-function functionB(user_id, sent_at) {
-    console.log(`Function B executed for ${user_id}, sent_at: ${sent_at}`);
-}
 
 
