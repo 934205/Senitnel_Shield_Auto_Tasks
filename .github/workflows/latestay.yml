@@ -1,5 +1,5 @@
 
-name: Sentinel Shield Auto Tasks (2PM–7PM IST)
+name: Check Students Late Stays (2PM–7PM IST)
 
 on:
   schedule:
