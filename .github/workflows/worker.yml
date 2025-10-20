@@ -9,18 +9,19 @@ on:
 jobs:
   run-worker:
     runs-on: ubuntu-latest
+
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
-      # -----------------------------
-      # Cache node_modules
-      # -----------------------------
+      # 3️⃣ Cache node_modules
       - name: Cache node_modules
         uses: actions/cache@v3
         with:
@@ -29,9 +30,7 @@ jobs:
           restore-keys: |
             node-modules-
 
-      # -----------------------------
-      # Cache npm
-      # -----------------------------
+      # 4️⃣ Cache npm
       - name: Cache npm
         uses: actions/cache@v3
         with:
@@ -40,17 +39,11 @@ jobs:
           restore-keys: |
             npm-cache-
 
-      # -----------------------------
-      # Install dependencies (retry if fails)
-      # -----------------------------
+      # 5️⃣ Install dependencies (faster because node_modules is cached)
       - name: Install dependencies
-        run: |
-          echo "Installing dependencies..."
-          npm ci || npm ci || npm ci  # Retry up to 3 times
+        run: npm install
 
-      # -----------------------------
-      # Run worker
-      # -----------------------------
+      # 6️⃣ Run Supabase worker
       - name: Run Supabase worker
         run: node worker.js
         env:
