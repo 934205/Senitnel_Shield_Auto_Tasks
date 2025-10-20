@@ -1,10 +1,10 @@
-name: Senitnel Shield Auto Tasks (8AM–6PM IST)
+name: Sentinel Shield Auto Tasks (8AM–6PM IST)
 
 on:
   schedule:
     # Run every 30 mins between 8 AM–6 PM IST (2:30–12:30 UTC)
     - cron: '0,30 2-12 * * *'
-  workflow_dispatch: # Allow manual run for testing
+  workflow_dispatch:
 
 jobs:
   run-worker:
@@ -18,9 +18,39 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies
-        run: npm install
+      # -----------------------------
+      # Cache node_modules
+      # -----------------------------
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: node-modules-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            node-modules-
 
+      # -----------------------------
+      # Cache npm
+      # -----------------------------
+      - name: Cache npm
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: npm-cache-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            npm-cache-
+
+      # -----------------------------
+      # Install dependencies (retry if fails)
+      # -----------------------------
+      - name: Install dependencies
+        run: |
+          echo "Installing dependencies..."
+          npm ci || npm ci || npm ci  # Retry up to 3 times
+
+      # -----------------------------
+      # Run worker
+      # -----------------------------
       - name: Run Supabase worker
         run: node worker.js
         env:
