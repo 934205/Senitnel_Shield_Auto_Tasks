@@ -124,7 +124,10 @@ async function checkHostelBoys() {
         const currentDate = new Date().toISOString().split("T")[0];
 
         if (now >= endTime) {
-          await handleEndOperation(student,currentDate); // ensure FCM is sent
+          await handleEndOperation(student, currentDate); // ensure FCM is sent
+        }
+        else {
+          console.log(`⌛ ${student.name} (${student.reg_no}) still inside — current time ${now.toTimeString().split(' ')[0]} < end time ${timing[endTimeColumn]}`);
         }
       })
     );
