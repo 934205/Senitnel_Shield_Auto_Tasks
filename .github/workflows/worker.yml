@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -23,6 +23,7 @@ jobs:
 
       # 3️⃣ Cache node_modules
       - name: Cache node_modules
+        id: cache-node-modules
         uses: actions/cache@v3
         with:
           path: node_modules
@@ -32,6 +33,7 @@ jobs:
 
       # 4️⃣ Cache npm
       - name: Cache npm
+        id: cache-npm
         uses: actions/cache@v3
         with:
           path: ~/.npm
@@ -39,9 +41,10 @@ jobs:
           restore-keys: |
             npm-cache-
 
-      # 5️⃣ Install dependencies (faster because node_modules is cached)
+      # 5️⃣ Install dependencies only if cache missed
       - name: Install dependencies
-        run: npm install
+        if: steps.cache-node-modules.outputs.cache-hit != 'true'
+        run: npm ci
 
       # 6️⃣ Run Supabase worker
       - name: Run Supabase worker
