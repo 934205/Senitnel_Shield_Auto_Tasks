@@ -112,7 +112,8 @@ async function sendMessage(reg_no) {
         await supabase
           .from("alerts")
           .update({ status: "timeout" })
-          .eq("id", data.id);
+          .eq("reg_no",reg_no)
+          .eq("sent_at",sent_at);
       }
     }, 2 * 60 * 1000); // 2 minutes
 
