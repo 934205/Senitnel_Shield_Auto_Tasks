@@ -41,7 +41,7 @@ async function sendAlert(reg_no) {
             throw new Error(`No FCM token found for reg_no: ${reg_no}`);
         }
 
-        const info = "You are staying inside campus after regular time? please reply here why are you stay inside campus?"
+        const info = "Your afternoon classes started but you are still outside the campus? please reply here why are you outside campus?"
         const sent_at = Date.now();
 
         // 1️⃣ Insert alert into DB
@@ -56,7 +56,7 @@ async function sendAlert(reg_no) {
             data: {
                 type: "input_alert",
                 sentAt: sent_at.toString(),
-                name: "latestay",
+                name: "afternoon",
                 info,
             },
             android: { priority: "high", ttl: 0, },
@@ -88,7 +88,7 @@ async function sendAlert(reg_no) {
 
                 // Execute function B
                 await client.messages.create({
-                    body: `⚠️ ALERT: ${student.name} (${reg_no}) inside campus after regular end time  (mobile number = ${student.mobile_number}) 
+                    body: `⚠️ ALERT: ${student.name} (${reg_no}) still outside campus after lunch time end (mobile number = ${student.mobile_number}) 
                     and they didn't sent any reply`,
                     from: twilioPhone,
                     to: adminPhone,
@@ -128,7 +128,7 @@ async function handleAlertOperation(student, currentDate) {
 
 
 // GitHub Action triggered script
-async function alertLateStayStudents() {
+async function alertStudentsAfternoon() {
     const today = new Date().toLocaleString("en-US", { weekday: "long" }).toLowerCase();
     const endTimeColumn = `${today}_end_time`;
     const currentDate = new Date().toISOString().split("T")[0];
@@ -137,13 +137,12 @@ async function alertLateStayStudents() {
         const { data: students } = await supabase
             .from("student")
             .select("*")
-            .eq("hosteller", false);
 
         const { data: logs } = await supabase
             .from("location_logs")
             .select("reg_no")
             .eq("date", currentDate)
-            .eq("inside", true);
+            .eq("inside", false);
 
         const insideRegNos = logs.map(l => l.reg_no);
         const insideStudents = students.filter(s => insideRegNos.includes(s.reg_no));
@@ -166,7 +165,7 @@ async function alertLateStayStudents() {
                 const endTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h, m, s || 0);
                 const currentDate = new Date().toISOString().split("T")[0];
 
-                if (now >= endTime.getTime() + 30 * 60 * 1000) {
+                if (now < endTime.getTime()) {
                     await handleAlertOperation(student, currentDate); // ensure FCM is sent
                 }
 
@@ -179,6 +178,6 @@ async function alertLateStayStudents() {
 
 
 // ✅ Run once when GitHub Action triggers
-alertLateStayStudents();
+alertStudentsAfternoon();
 
 
