@@ -93,7 +93,7 @@ async function sendMessage(reg_no) {
         .single();
 
       if (data && data.status === "pending") {
-        console.log(`🚫 ${reg_no} did not respond in time`);
+        console.log(`🚫 ${reg_no} device did not respond in time`);
 
         const { data: student } = await supabase
           .from("student")
