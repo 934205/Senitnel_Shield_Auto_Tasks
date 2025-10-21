@@ -2,7 +2,7 @@ name: Check Device Status (8AM–6PM IST)
 
 on:
   schedule:
-    # Run every 30 mins between 8 AM–6 PM IST (2:30–12:30 UTC)
+    # Run every 5 mins between 8 AM–6 PM IST (2:30–12:30 UTC)
     - cron: '*/5 * * * *'
   workflow_dispatch:
 
