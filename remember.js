@@ -32,3 +32,5 @@ async function notifyAll() {
     console.error('Error sending:', error);
   }
 };
+
+notifyAll()
