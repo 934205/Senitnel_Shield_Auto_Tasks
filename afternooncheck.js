@@ -93,7 +93,7 @@ async function sendAlert(reg_no) {
                     from: twilioPhone,
                     to: adminPhone,
                 });
-                console.log("🚨 Student reply sent to Admin sent");
+                console.log("🚨 Alert sent to Admin");
 
                 // Update status to timeout
                 await supabase
