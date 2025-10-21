@@ -1,5 +1,5 @@
 
-name: Check Students Late Stays (2PM–7PM IST)
+name: Check Afternoon (2PM–3PM IST)
 
 on:
   schedule:
